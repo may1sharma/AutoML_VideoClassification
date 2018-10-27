@@ -3,7 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+import numpy as np
 import pickle
+from tqdm import tqdm
 
 from collections import Counter
 import sys
@@ -36,46 +38,55 @@ class Net(nn.Module):
 net = Net()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+Epochs = 2
 
 classes = ('ball', 'gym')
 
 def train(path):
     (x_train, y_train), (x_test, y_test) = pickle.load(open(path, 'rb'))
 
-    for epoch in range(5):  # loop over the dataset multiple times
-        # running_loss = 0.0
-        for i, data in enumerate(x_train):
-            # get the inputs
-            labels = y_train[i]
+    for epoch in range(Epochs):  # loop over the data-set multiple times
+        print()
+        print("===================================Epoch "+str(epoch+1)+"================================")
+        print()
+        with tqdm(total=len(x_train), desc="Loss: {:.4f}".format(0)) as tq:
+            for i, data in enumerate(x_train):
+                # get the inputs
+                labels = y_train[i]
 
-            data = data.reshape(16,3,240,320)
+                data = data.reshape(16,3,240,320)
 
-            inputs = torch.tensor(data)
+                inputs = torch.tensor(data)
 
-            inputs = inputs.float()
+                inputs = inputs.float()
 
-            # zero the parameter gradients
-            optimizer.zero_grad()
-            outputs = net(inputs)
+                # zero the parameter gradients
+                optimizer.zero_grad()
+                outputs = net(inputs)
 
-            llist = [labels]*16
+                llist = [labels]*16
 
-            labels = torch.tensor(llist,dtype=torch.int64)
-            labels = labels.view(-1)
+                labels = torch.tensor(llist, dtype=torch.int64)
+                labels = labels.view(-1)
 
-            loss = F.nll_loss(outputs, labels)
-            loss.backward()
-            optimizer.step()
+                loss = F.nll_loss(outputs, labels)
+                loss.backward()
+                optimizer.step()
 
-            print("Loss: ", loss.item())
+                tq.set_description("Loss: {:.4f}".format(loss.item()))
+                tq.update(1)
 
     torch.save(net.state_dict(), 'model')
+    print()
     print('Finished Training')
+    print()
 
 
 def predict(path):
     (x_train, y_train), (x_test, y_test) = pickle.load(open(path, 'rb'))
+    print("Loading Model .....")
     net.load_state_dict(torch.load('model'))
+    print("Running test")
     pred = []
     for i, data in enumerate(x_test):
         data = data.reshape(16, 3, 240, 320)
@@ -86,8 +97,10 @@ def predict(path):
         c = Counter(predicted.numpy()).most_common(1)[0][0]
         # print('Predicted: ', classes[c])
         pred.append(c)
-    print (y_test)
-    print (pred)
+    print()
+    print("True Labels:      ", y_test)
+    print("Predicted Labels: ", pred)
+    print()
     print(classification_report(y_test,pred))
 
 
