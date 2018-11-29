@@ -34,6 +34,8 @@ for entry in os.scandir(path):
             data.append(data_inner)
             label.append(cnt)
     cnt += 1
+
+print("Len=",len(data))
 data = np.asarray(data)
 label = np.asarray(label)
 print("Data: ",data.shape)
