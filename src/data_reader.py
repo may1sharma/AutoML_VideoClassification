@@ -1,9 +1,9 @@
 import os
 from PIL import Image
 import numpy as np
-import pickle
 from glob import glob
 from sklearn.model_selection import train_test_split
+import h5py
 
 path = '../sample/ucf101'
 data = []
@@ -42,8 +42,9 @@ print("Label: ",label.shape)
 x_train, x_test, y_train, y_test = train_test_split(data,label,shuffle=True)
 print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
 
-
-save = (x_train, y_train), (x_test, y_test)
-
-with open('../sample/data_new.pkl','wb') as f:
-    pickle.dump(save, f)
+h5f = h5py.File('../sample/data.h5', 'w')
+h5f.create_dataset('x_train', data=x_train)
+h5f.create_dataset('y_train', data=y_train)
+h5f.create_dataset('x_test', data=x_test)
+h5f.create_dataset('y_test', data=y_test)
+h5f.close()
