@@ -27,7 +27,7 @@ for entry in os.scandir(path):
         print (entry_name.resolve())
         for input in os.scandir(entry_name):
             data_inner = []
-            print ("input", input)
+            # print ("input", input)
             total_frame = int(open(entry_name/input.name/'n_frames','r').read())
             # print (total_frame)
             l = (total_frame - min_frame)//2
