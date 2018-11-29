@@ -2,10 +2,11 @@ import os
 from PIL import Image
 import numpy as np
 from glob import glob
+from pathlib import Path
 from sklearn.model_selection import train_test_split
 import h5py
 
-path = '../sample/ucf101'
+path = Path('../sample/small_ucf101')
 data = []
 label = []
 cnt=0
@@ -13,24 +14,35 @@ min_frame = 50
 
 for entry in os.scandir(path):
     if (entry.name != '.DS_Store'):
-        for input in os.scandir(path + "/" + entry.name):
-            impath = path + "/" + entry.name + "/" + input.name + "/" + 'n_frames'
+        entry_name = path/entry.name
+        for input in os.scandir(entry_name):
+            impath = entry_name/input.name/'n_frames'
+            # impath = path + "/" + entry.name + "/" + input.name + "/" + 'n_frames'
             val = int(open(impath, 'r').read())
             min_frame = min(min_frame, val)
 
 for entry in os.scandir(path):
     if (entry.name != '.DS_Store'):
-        for input in os.scandir(path + "/" + entry.name):
+        entry_name = path/entry.name
+        print (entry_name.resolve())
+        for input in os.scandir(entry_name):
             data_inner = []
-            total_current_frame = int(open(path + "/" + entry.name + "/" + input.name + '/n_frames','r').read())
-            l = (total_current_frame - min_frame)//2
+            print ("input", input)
+            total_frame = int(open(entry_name/input.name/'n_frames','r').read())
+            # print (total_frame)
+            l = (total_frame - min_frame)//2
             for i in range(l,l+min_frame):
-                impath = glob(path + "/" + entry.name + "/" + input.name + "/" + 'image_*'+str(i)+'.jpg')[0]
-                img = Image.open(impath)
+                if os.name == 'nt':
+                    im_path = glob(str((entry_name/input.name).resolve())+"\\"+'image_*'+str(i)+'.jpg')[0]
+                else:
+                    im_path = glob(str((entry_name/input.name).resolve()) + "/" + 'image_*' + str(i) + '.jpg')[0]
+                img = Image.open(im_path)
                 img.load()
                 img_np = np.asarray(img, dtype="int32")
+                # print (img_np.shape)
                 data_inner.append(img_np)
-            data_inner = np.asarray(data_inner)
+            data_inner = np.array(data_inner)
+            # print (data_inner.shape)
             data.append(data_inner)
             label.append(cnt)
     cnt += 1
