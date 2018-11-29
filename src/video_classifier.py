@@ -4,7 +4,7 @@ import numpy as np
 from skimage.transform import resize
 from sklearn.model_selection import train_test_split
 from functools import reduce
-from queue import PriorityQueue
+import heapq
 import time
 
 from autokeras.supervised import Supervised
@@ -27,6 +27,7 @@ class VideoClassifier(Supervised):
         self.Epochs = 10
         self.encoder = OneHotEncoder()
         self.path = '../temp'
+        self.capacity = 50
 
     def evaluate(self, x_test, y_test):
         y_predict = self.predict(x_test)
@@ -65,7 +66,7 @@ class VideoClassifier(Supervised):
         y_valid = self.encoder.inverse_transform(y_valid)
 
         visited = set()
-        pq = PriorityQueue()
+        pq = []
         trainingQ = [(self.Length, self.Width, self.Epochs)]
         accuracy = 0.0
 
@@ -95,7 +96,10 @@ class VideoClassifier(Supervised):
                         pred_valid = self.encoder.inverse_transform(output)
                         accu = self.metric().evaluate(y_valid, pred_valid)
 
-                        pq.put((-accu, (len, width, epoch)))
+                        pq.append((-accu, (len, width, epoch)))
+                        if len(pq) > self.capacity:
+                            heapq.heapify(pq)
+                            pq.remove(heapq.nlargest(1, pq))
                         if accu > accuracy:
                             self.Epochs = epoch
                             self.Length = len
@@ -108,7 +112,8 @@ class VideoClassifier(Supervised):
             if not inc:
                 if not pq:
                     break
-                _, (nexlen, nexwidth, nexepoch) = pq.get()
+                heapq.heapify(pq)
+                _, (nexlen, nexwidth, nexepoch) = heapq.heappop(pq)
             else:
                 nexlen, nexwidth, nexepoch = self.Length, self.Width, self.Epochs
 
