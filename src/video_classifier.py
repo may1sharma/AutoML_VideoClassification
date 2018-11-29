@@ -4,10 +4,8 @@ import numpy as np
 from skimage.transform import resize
 from sklearn.model_selection import train_test_split
 from functools import reduce
-from queue import Queue
+from queue import PriorityQueue
 import time
-
-from .simple_nn import Net
 
 from autokeras.supervised import Supervised
 from autokeras.preprocessor import OneHotEncoder, ImageDataTransformer
@@ -66,55 +64,69 @@ class VideoClassifier(Supervised):
 
         y_valid = self.encoder.inverse_transform(y_valid)
 
-        trainingQ = []
-        trainingQ.append((self.Length, self.Width, self.Epochs))
+        visited = set()
+        pq = PriorityQueue()
+        trainingQ = [(self.Length, self.Width, self.Epochs)]
         accuracy = 0.0
 
         while trainingQ:
             inc = False
             for len, width, epoch in trainingQ:
-                if time.time() < end_time:
-                    net = CnnGenerator(self.encoder.n_classes, x_train.shape[1:])\
-                        .generate(model_len=len, model_width=width).produce_model()
+                if time.time() < end_time and (len, width, epoch) not in visited:
+                    visited.add((len, width, epoch))
+                    try:
+                        net = CnnGenerator(self.encoder.n_classes, x_train.shape[1:])\
+                            .generate(model_len=len, model_width=width).produce_model()
 
-                    model_trainer = ModelTrainer(net,
-                                             path=self.path,
-                                             loss_function=classification_loss,
-                                             metric=Accuracy,
-                                             train_data=train_data,
-                                             test_data=test_data,
-                                             verbose=True)
-                    model_trainer.train_model(epoch, 3)
+                        model_trainer = ModelTrainer(net,
+                                                 path=self.path,
+                                                 loss_function=classification_loss,
+                                                 metric=Accuracy,
+                                                 train_data=train_data,
+                                                 test_data=test_data,
+                                                 verbose=True)
+                        model_trainer.train_model(epoch, 3)
 
-                    outputs = []
-                    with torch.no_grad():
-                        for index, (inputs, _) in enumerate(test_data):
-                            outputs.append(net(inputs).numpy())
-                    output = reduce(lambda x, y: np.concatenate((x, y)), outputs)
-                    pred_valid = self.encoder.inverse_transform(output)
-                    accu = self.metric().evaluate(y_valid, pred_valid)
+                        outputs = []
+                        with torch.no_grad():
+                            for index, (inputs, _) in enumerate(test_data):
+                                outputs.append(net(inputs).numpy())
+                        output = reduce(lambda x, y: np.concatenate((x, y)), outputs)
+                        pred_valid = self.encoder.inverse_transform(output)
+                        accu = self.metric().evaluate(y_valid, pred_valid)
 
-                    if accu > accuracy:
-                        self.Epochs = epoch
-                        self.Length = len
-                        self.Width = width
-                        accuracy = accu
-                        inc = True
+                        pq.put((-accu, (len, width, epoch)))
+                        if accu > accuracy:
+                            self.Epochs = epoch
+                            self.Length = len
+                            self.Width = width
+                            accuracy = accu
+                            inc = True
+                    except Exception as e:
+                        print(e)
 
             if not inc:
-                break
+                if not pq:
+                    break
+                _, (nexlen, nexwidth, nexepoch) = pq.get()
+            else:
+                nexlen, nexwidth, nexepoch = self.Length, self.Width, self.Epochs
 
             # Create children
             trainingQ = []
-            trainingQ.append((self.Length+1, self.Width, self.Epochs))
-            trainingQ.append((self.Length, self.Width*2, self.Epochs))
-            trainingQ.append((self.Length, self.Width, self.Epochs+5))
+            trainingQ.append((nexlen+1, nexwidth, nexepoch))
+            trainingQ.append((nexlen, nexwidth*2, nexepoch))
+            trainingQ.append((nexlen, nexwidth, nexepoch+5))
+            trainingQ.append((nexlen+2, nexwidth, nexepoch+3))
+            trainingQ.append((nexlen, nexwidth*2, nexepoch+2))
+            trainingQ.append((nexlen+1, nexwidth, nexepoch+3))
 
         print('Finished Fit')
         print("Optimal Conv3D Network Parameters:")
         print("Number of Layers (Length):", self.Length)
         print("Number of Filters (Width):", self.Width)
-        print("Numbre of Epochs", self.Epochs)
+        print("Number of Epochs", self.Epochs)
+        print()
 
 
     def final_fit(self, x_train, y_train, x_test, y_test, trainer_args=None, retrain=True):
