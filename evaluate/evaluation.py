@@ -10,7 +10,7 @@ def evaluate(path, supervised):
         y_test = hf['y_test'][:]
     print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
 
-    supervised.fit(x_train, y_train, time_limit=5*60)
+    supervised.fit(x_train, y_train, time_limit=60*60*6)
     supervised.final_fit(x_train, y_train, x_test, y_test, retrain=True)
     return supervised.evaluate(x_test, y_test)
 

@@ -94,6 +94,7 @@ class VideoClassifier(Supervised):
                         output = reduce(lambda x, y: np.concatenate((x, y)), outputs)
                         pred_valid = self.encoder.inverse_transform(output)
                         accu = self.metric().evaluate(y_valid, pred_valid)
+                        print("Accuracy: ", accu, " Parameters: ", len, width, epoch)
 
                         pq.append((-accu, (len, width, epoch)))
                         if pq.__len__() > self.capacity:
