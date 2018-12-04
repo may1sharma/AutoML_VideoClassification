@@ -71,7 +71,6 @@ class VideoClassifier(Supervised):
         accuracy = 0.0
 
         while trainingQ:
-            inc = False
             for len, width, epoch in trainingQ:
                 if time.time() < end_time and (len, width, epoch) not in visited:
                     visited.add((len, width, epoch))
@@ -97,15 +96,14 @@ class VideoClassifier(Supervised):
                         accu = self.metric().evaluate(y_valid, pred_valid)
 
                         pq.append((-accu, (len, width, epoch)))
-                        if len(pq) > self.capacity:
+                        if pq.__len__() > self.capacity:
                             heapq.heapify(pq)
-                            pq.remove(heapq.nlargest(1, pq))
+                            pq.remove(heapq.nlargest(1, pq)[0])
                         if accu > accuracy:
                             self.Epochs = epoch
                             self.Length = len
                             self.Width = width
                             accuracy = accu
-                            inc = True
                     except Exception as e:
                         print(e)
 
