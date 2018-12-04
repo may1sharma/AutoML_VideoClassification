@@ -6,11 +6,11 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 import h5py
 
-path = Path('../sample/small_ucf101')
+path = Path('/Users/mayank/workspace/sample101')
 data = []
 label = []
-cnt=0
-min_frame = 50
+cnt = 0
+min_frame = 32
 
 for entry in os.scandir(path):
     if (entry.name != '.DS_Store'):
@@ -30,8 +30,10 @@ for entry in os.scandir(path):
             # print ("input", input)
             total_frame = int(open(entry_name/input.name/'n_frames','r').read())
             # print (total_frame)
-            l = (total_frame - min_frame)//2
-            for i in range(l,l+min_frame):
+            # l = (total_frame - min_frame)//2
+            sel = total_frame//min_frame
+            i = total_frame % min_frame
+            for count in range(min_frame):
                 if os.name == 'nt':
                     im_path = glob(str((entry_name/input.name).resolve())+"\\"+'image_*'+str(i)+'.jpg')[0]
                 else:
@@ -41,6 +43,7 @@ for entry in os.scandir(path):
                 img_np = np.asarray(img, dtype="int32")
                 # print (img_np.shape)
                 data_inner.append(img_np)
+                i += sel
             data_inner = np.array(data_inner)
             # print (data_inner.shape)
             data.append(data_inner)

@@ -109,13 +109,10 @@ class VideoClassifier(Supervised):
                     except Exception as e:
                         print(e)
 
-            if not inc:
-                if not pq:
-                    break
-                heapq.heapify(pq)
-                _, (nexlen, nexwidth, nexepoch) = heapq.heappop(pq)
-            else:
-                nexlen, nexwidth, nexepoch = self.Length, self.Width, self.Epochs
+            if not pq:
+                break
+            heapq.heapify(pq)
+            _, (nexlen, nexwidth, nexepoch) = heapq.heappop(pq)
 
             # Create children
             trainingQ = []
