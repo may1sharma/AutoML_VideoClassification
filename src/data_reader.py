@@ -32,7 +32,7 @@ for entry in os.scandir(path):
             # print (total_frame)
             # l = (total_frame - min_frame)//2
             sel = total_frame//min_frame
-            i = total_frame % min_frame
+            i = (total_frame % min_frame)//2
             for count in range(min_frame):
                 if os.name == 'nt':
                     im_path = glob(str((entry_name/input.name).resolve())+"\\"+'image_*'+str(i)+'.jpg')[0]
