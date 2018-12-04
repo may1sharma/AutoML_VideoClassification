@@ -6,7 +6,7 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 import h5py
 
-path = Path('/Users/mayank/workspace/sample101')
+path = Path('../sample/ucf101')
 data = []
 label = []
 cnt = 0
